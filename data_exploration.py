@@ -164,7 +164,7 @@ def plot_distributions(plot_dict):
             plt.bar(adj_options, options[1])
             plt.title(col)
             plt.ylabel("Number of responses")
-            plt.show()
+
             print()
             plt.figure(figsize=(14, 10))
             # plt.pie(options[1], labels=adj_options,autopct='%1.1f%%')
@@ -174,7 +174,7 @@ def plot_distributions(plot_dict):
                 autopct="%1.1f%%",
             )
             plt.title(col)
-            plt.show()
+
             plt.savefig(f"distribution_{col.replace(' ', '')}")
             plt.close()
             print()
@@ -187,12 +187,12 @@ def plot_distributions(plot_dict):
         plt.bar(adj_options, options[1])
         plt.title(col)
         plt.ylabel("Number of responses")
-        plt.show()
+
         print()
         plt.figure(figsize=(14, 10))
         plt.pie(options[1], labels=adj_options, autopct="%1.1f%%")
         plt.title(col)
-        plt.show()
+
         plt.savefig(f"distribution_{col.replace(' ', '')}")
         plt.close()
         print()
@@ -294,7 +294,7 @@ def preprocess_data(data, test_data=None):
     X_demographics = data[demographics]
     enc_gender = preprocessing.OrdinalEncoder()
     X_demographics["Gender"] = enc_gender.fit_transform(
-        X_demographics["Gender"].array.reshape(-1, 1)
+        np.squeeze(X_demographics["Gender"].array).reshape(-1, 1)
     )
 
     age_str_to_value = {
@@ -321,14 +321,14 @@ def preprocess_data(data, test_data=None):
     # Check the order here (of)
     enc_edu = preprocessing.OrdinalEncoder()
     X_demographics["Education"] = enc_edu.fit_transform(
-        X_demographics["Education"].array.reshape(-1, 1)
+        np.squeeze(X_demographics["Education"].array).reshape(-1, 1)
     )
 
     enc_loc = preprocessing.OneHotEncoder(sparse=False)
     locations = enc_loc.fit_transform(
-        X_demographics["Location (Census Region)"].array.reshape(-1, 1)
+        np.squeeze(X_demographics["Location (Census Region)"].array).reshape(-1, 1)
     )
-    X_demographics[enc_loc.get_feature_names_out(["location"])] = locations
+    X_demographics[enc_loc.get_feature_names(["location"])] = locations
 
     # Now we should have everything in the right type (float)
     # To finish, we standardize everything
@@ -340,18 +340,18 @@ def preprocess_data(data, test_data=None):
 
     if test_data is not None:
         X_test = test_data[demographics]
-        X_test["Gender"] = enc_gender.transform(X_test["Gender"].array.reshape(-1, 1))
+        X_test["Gender"] = enc_gender.transform(np.squeeze(X_test["Gender"].array).reshape(-1, 1))
         X_test["Age"] = X_test["Age"].apply(lambda s: age_str_to_value[s])
         X_test["Household Income"] = X_test["Household Income"].apply(
             lambda s: income_str_to_value[s]
         )
         X_test["Education"] = enc_edu.transform(
-            X_test["Education"].array.reshape(-1, 1)
+            np.squeeze(X_test["Education"].array).reshape(-1, 1)
         )
         locations_test = enc_loc.transform(
-            X_test["Location (Census Region)"].array.reshape(-1, 1)
+            np.squeeze(X_test["Location (Census Region)"].array).reshape(-1, 1)
         )
-        X_test[enc_loc.get_feature_names_out(["location"])] = locations_test
+        X_test[enc_loc.get_feature_names(["location"])] = locations_test
 
         X_test[["Household Income", "Age", "Education"]] = scaler.transform(
             X_test[["Household Income", "Age", "Education"]].to_numpy()
@@ -472,7 +472,7 @@ def create_pie_plots(df, col):
     plt.figure(figsize=(14, 8))
     plt.pie(col_df.to_numpy(), labels=list(col_df.index), autopct="%1.1f%%")
     plt.title(col)
-    plt.show()
+
     plt.savefig(f"pie_{col.replace(' ', '')}.png")
     plt.close()
     print()
@@ -512,7 +512,7 @@ def plot_pie_in_pie(survey_dict, census_dataframe, feature):
         aspect="equal",
         title=f"\n{feature}\n Outer chart: Census Data\n Inner chart: Survey Data",
     )
-    plt.show()
+
     plt.savefig(f"pie_in_pie_{feature.replace(' ','')}.png")
     plt.close()
 
@@ -546,7 +546,7 @@ def multi_barplot(survey_dict, census_dataframe, feature):
     plt.ylabel("Percent")
     plt.title(feature)
     ax.legend()
-    plt.show()
+
     plt.savefig(f"multi_barplot_{feature.replace(' ', '')}")
     plt.close()
 
