@@ -18,7 +18,7 @@ def assemble_original_and_extra_survey():
     print(df.info())
 
     # Add survey results from Step 2 (22 Responses)
-    extra_survey = pd.read_csv("extra_survey.csv")
+    extra_survey = pd.read_csv("new_comma_survey.csv")
     extra_survey = extra_survey.drop(["Timestamp"], axis=1)
     columns = {
         extra_survey.columns[i]: df.columns[i + 1]
@@ -273,16 +273,6 @@ def analyze_assembled_survey(df, demographic_groups, answers):
     )
 
 
-# Section 1 and 2: run the analyze function above:
-
-df = assemble_original_and_extra_survey()
-demographic_groups, answers = format_survey_data(df)
-
-analyze_assembled_survey(df, demographic_groups, answers)
-
-"""# Section 3"""
-
-
 def preprocess_data(data, test_data=None):
     demographics = [
         "Gender",
@@ -340,7 +330,9 @@ def preprocess_data(data, test_data=None):
 
     if test_data is not None:
         X_test = test_data[demographics]
-        X_test["Gender"] = enc_gender.transform(np.squeeze(X_test["Gender"].array).reshape(-1, 1))
+        X_test["Gender"] = enc_gender.transform(
+            np.squeeze(X_test["Gender"].array).reshape(-1, 1)
+        )
         X_test["Age"] = X_test["Age"].apply(lambda s: age_str_to_value[s])
         X_test["Household Income"] = X_test["Household Income"].apply(
             lambda s: income_str_to_value[s]
@@ -382,12 +374,6 @@ def make_models(df):
         models_for_questions[question] = m
 
     return questions, models_for_questions
-
-
-questions, models = make_models(df)
-
-
-"""# Section 4"""
 
 
 def get_census_data():
@@ -551,14 +537,6 @@ def multi_barplot(survey_dict, census_dataframe, feature):
     plt.close()
 
 
-census_df = get_census_data()
-create_pie_plots(census_df, "Household Income")
-plot_pie_in_pie(demographic_groups, census_df, "Location (Census Region)")
-multi_barplot(demographic_groups, census_df, "Household Income")
-
-"""#Section 5"""
-
-
 def barh(results, category_names, title):
     category_names = replace_every_nth_space(category_names, 3)
     labels = list(results.keys())
@@ -598,37 +576,58 @@ def barh(results, category_names, title):
     return fig, ax
 
 
-df_plain = df.dropna()
-_, census_preprocessed = preprocess_data(df_plain, census_df)
 
-counts = census_df.Count / census_df.Count.sum()
+if __name__ == "__main__":
+    """ Steps 1 and 2 """
+    df = assemble_original_and_extra_survey()
+    demographic_groups, answers = format_survey_data(df)
 
-census_df.Count.sum()
+    analyze_assembled_survey(df, demographic_groups, answers)
 
+    """ Section 3 """
 
-for question in questions:
-    print(question)
-    answer_options = answers[question][0]
-    answer_counts = answers[question][1]
-    print(answers[question][0])
-    predictions = models[question].predict_proba(census_preprocessed)
+    questions, models = make_models(df)
 
-    weighted_predictions = predictions.transpose() @ counts
-    if question != "In your opinion, which sentence is more gramatically correct?":
-        answer_options = answers[question][0][:-1]
-        answer_counts = answers[question][1][:-1]
+    """ Section 4 """
 
-    weighted_predictions = [
-        weighted_predictions[np.where(models[question].classes_ == option)][0]
-        for option in answer_options
-    ]
-    survey_probs = answer_counts / sum(answer_counts)
-    results = {"Census": weighted_predictions, "Post-Strat": survey_probs}
-    print("survey probs: ", survey_probs)
-    print("Probabilities: ", weighted_predictions)
-    print()
+    census_df = get_census_data()
+    create_pie_plots(census_df, "Household Income")
+    plot_pie_in_pie(demographic_groups, census_df, "Location (Census Region)")
+    multi_barplot(demographic_groups, census_df, "Household Income")
 
-    barh(results, answer_options, question)
+    """ Section 5 """
+
+    df_plain = df.dropna()
+    _, census_preprocessed = preprocess_data(df_plain, census_df)
+
+    counts = census_df.Count / census_df.Count.sum()
+
+    census_df.Count.sum()
 
 
-print(results)
+    for question in questions:
+        print(question)
+        answer_options = answers[question][0]
+        answer_counts = answers[question][1]
+        print(answers[question][0])
+        predictions = models[question].predict_proba(census_preprocessed)
+
+        weighted_predictions = predictions.transpose() @ counts
+        if question != "In your opinion, which sentence is more gramatically correct?":
+            answer_options = answers[question][0][:-1]
+            answer_counts = answers[question][1][:-1]
+
+        weighted_predictions = [
+            weighted_predictions[np.where(models[question].classes_ == option)][0]
+            for option in answer_options
+        ]
+        survey_probs = answer_counts / sum(answer_counts)
+        results = {"Census": weighted_predictions, "Post-Strat": survey_probs}
+        print("survey probs: ", survey_probs)
+        print("Probabilities: ", weighted_predictions)
+        print()
+
+        barh(results, answer_options, question)
+
+
+    print(results)
